@@ -1,4 +1,4 @@
-OpenPlantMap-API
+<img src="https://raw.githubusercontent.com/OpenPlantMap/OpenPlantMap-API/master/images/Logo.png" width="450">API
 ================
 This is the back-end for [OpenPlantMap](http://opensensemap.org).
 
