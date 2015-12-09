@@ -1,18 +1,20 @@
-OpenSenseMap-API
+OpenPlantMap-API
 ================
-This is the back-end for [OpenSenseMap](http://opensensemap.org).
+This is the back-end for [OpenPlantMap](http://opensensemap.org).
 
-OpenSenseMap is part of the [SenseBox](http//sensebox.de) project.
-To get more information about OpenSenseBox and SenseBox visit the before mentioned links or have a look at this [video](https://www.youtube.com/watch?v=uTOWYa42_rI).
+The OpenPlantMap-API is based on the [OpenSenseMap-API] (https://github.com/sensebox/OpenSenseMap-API) and adapted for OpenPlantMap.
 
-The API has been built as part of my bachelor thesis at the ifgi (Institute for Geoinformatics, WWU Münster).
+OpenPlantMap is created within the course "SenseBox for People-Centered Urban Planning" at the Institute for Geoinformatics (WWU Münster).
 
-### Technologies
+### Installation instructions
+The installation steps are the same like the of [OpenSenseMap-API] (https://github.com/sensebox/OpenSenseMap-API).
+The following instructions are copied from the README file of this project.
+#### Technologies
 
 * [node.js]
 * [MongoDB]
 
-### Install dependencies (Ubuntu)
+#### Install dependencies (Ubuntu)
 
 It is assumed that you have installed node.js (developed using 0.10.26)
 
@@ -27,7 +29,7 @@ Database "OSeM-api"
     - sensors
 ```
 
-### Run for Development & Production
+#### Run for Development & Production
 
 Open the configuration file ```config/index.js``` and change settings accordingly.
 
@@ -52,7 +54,7 @@ node app.js
 - install docker and docker-compose
 - run `docker-compose up`
 
-### Create the JSDoc pages
+#### Create the JSDoc pages
 
 To create the documentation you need [apidocjs](http://apidocjs.com/) and run:
 ```
@@ -64,7 +66,7 @@ To push a new Version to gh-pages run:
 git subtree push --prefix doc/ origin gh-pages
 ```
 
-### License
+#### License
 
 [MIT](license.md) - Matthias Pfeil 2015
 
