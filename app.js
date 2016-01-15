@@ -231,7 +231,7 @@ var plantTypeSchema = new Schema({
   image:String
 });
 var plantSchema = new Schema({
- plantType:{
+  plantType:{
     type: Schema.Types.ObjectId,
     ref: 'PlantType',
     required: true
@@ -247,9 +247,13 @@ var Measurement = mongoose.model('Measurement', measurementSchema);
 var Box = mongoose.model('Box', boxSchema);
 var Sensor = mongoose.model('Sensor', sensorSchema);
 var User = mongoose.model('User', userSchema);
+var PlantType = mongoose.model('PlantType', plantTypeSchema);
+var Plant = mongoose.model('Plant', plantSchema);
 
 var PATH = '/boxes';
 var userPATH = 'users';
+var PATH_plants = '/plants';
+var PATH_plantTypes = '/planttypes';
 
 server.pre(function (request,response,next) {
   request.log.info({req: request}, 'REQUEST');
@@ -261,9 +265,15 @@ server.get({path : /(boxes)\.([a-z]+)/, version : '0.0.1'} , findAllBoxes);
 server.get({path : PATH +'/:boxId' , version : '0.0.1'} , findBox);
 server.get({path : PATH +'/:boxId/sensors', version : '0.0.1'}, getMeasurements);
 server.get({path : PATH +'/:boxId/data/:sensorId', version : '0.0.1'}, getData);
+server.get({path: PATH_plants, version : '0.0.1'}, findAllPlants);
+server.get({path: PATH_plants +'/:plantID', version : '0.0.1'}, findPlant);
+server.get({path: PATH_plantTypes, version : '0.0.1'}, findAllPlantTypes);
+server.get({path: PATH_plantTypes + '/:plantTypeID', version: '0.0.1'}, findPlantType);
 
 server.post({path : PATH , version: '0.0.1'} ,postNewBox);
 server.post({path : PATH +'/:boxId/:sensorId' , version : '0.0.1'}, postNewMeasurement);
+server.post({path: PATH_plants, version : '0.0.1'}, postNewPlant);
+server.post({path: Path_plantTypes, version : '0.0.1'}, postNewPlantType);
 
 server.put({path: PATH + '/:boxId' , version: '0.0.1'} , updateBox);
 
@@ -303,7 +313,7 @@ server.on('MethodNotAllowed', unknownMethodHandler);
  * @apiVersion 0.0.1
  * @apiGroup Boxes
  * @apiName updateBox
- */
+ */postNe
 function validApiKey (req,res,next) {
   User.findOne({apikey:req.headers['x-apikey']}, function (error, user) {
     if (error) {
@@ -628,6 +638,70 @@ function findBox(req, res, next) {
   } else{
     res.send(box);
   }
+}
+
+/**
+ * @api {get} /plants Get all Plants
+ * @apiName findAllPlants
+ * @apiGroup Plants
+ * @apiVersion 0.0.1
+ * @apiSampleRequest http://opensensemap.org:8000/plants
+ */
+function findAllPlants(req, res , next){
+  Plant.find({}).populate('plants').exec(function(err,plants){
+    if (req.params[1] === "json" || req.params[1] === undefined) {
+      res.send(plants);
+    } else if (req.params[1] === "geojson") {
+      tmp = JSON.stringify(plants);
+      tmp = JSON.parse(tmp);
+      var geojson = _.transform(tmp, function(result, n) {
+        lat = n.loc[0].geometry.coordinates[1];
+        lng = n.loc[0].geometry.coordinates[0];
+        delete n["loc"];
+        n["lat"] = lat;
+        n["lng"] = lng;
+        return result.push(n);
+      });
+      res.send(GeoJSON.parse(geojson, {Point: ['lat','lng']}));
+    }
+  });
+}
+
+/**
+ * @api {get} /plants/:plantID Get one Plant
+ * @apiName findPlant
+ * TODO
+ */
+function findPlant(req, res, next) {
+	// TODO
+}
+
+/**
+ * TODO
+ */
+function findPlantType(req, res , next){
+	// TODO
+}
+
+/**
+ * TODO
+ */
+function findAllPlantTypes(req, res, next) {
+	// TODO
+}
+
+/**
+ * TODO
+ */
+function postNewPlant(req, res, next) {
+// TODO
+}
+
+/**
+ * TODO
+ */
+function postNewPlantType(req, res, next) {
+// TODO
 }
 
 function createNewUser (req) {
