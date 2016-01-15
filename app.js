@@ -12,7 +12,7 @@ var restify = require('restify'),
   smtpTransport = require('nodemailer-smtp-transport'),
   htmlToText = require('nodemailer-html-to-text').htmlToText;
 
-var dbHost = process.env.DB_HOST || "db";
+var dbHost = process.env.DB_HOST || cfg.dbHost || 'db' || 'localhost';
 
 /*
   Logging
@@ -67,17 +67,24 @@ server.use(restify.bodyParser());
 
 // use this function to retry if a connection cannot be established immediately
 var connectWithRetry = function () {
-  return mongoose.connect("mongodb://" + dbHost + "/OSeM-api", {
-    keepAlive: 1
+ mongoose.connect("mongodb://" + dbHost +':'+ cfg.dbPort + "/OPlM-api", {
+    keepAlive: 1, 
+    user: cfg.dbuser,
+    pass: cfg.dbuserpass,
+    auth:{authdb:"admin"}
   }, function (err) {
     if (err) {
-      console.error('Failed to connect to mongo on startup - retrying in 5 sec', err);
-      setTimeout(connectWithRetry, 5000);
+      console.error('Failed to connect to mongo on startup with auth- try without', err);
+      mongoose.disconnect();
+      mongoose.connect("mongodb://" + dbHost +':'+ cfg.dbPort + "/OPlM-api", {
+      keepAlive: 1
+      });
     }
   });
 };
 
-conn = connectWithRetry();
+connectWithRetry();
+conn=mongoose.connection;
 
 var Schema = mongoose.Schema,
   ObjectId = Schema.ObjectID;
@@ -198,6 +205,42 @@ var userSchema = new Schema({
       trim: true
     }
   ]
+});
+var plantTypeSchema = new Schema({
+  name:[String],
+  latinName: {
+    type: String,
+    required: true
+  },
+  phCondition: {
+    min: Number,
+    max: Number
+  },
+  moistureCondition: {
+    min: Number,
+    max: Number
+  },
+  sunLightCondition: {
+    min: Number,
+    max: Number
+  },
+  temperatureCondition: {
+    min: Number,
+    max: Number
+  },
+  image:String
+});
+var plantSchema = new Schema({
+ plantType:{
+    type: Schema.Types.ObjectId,
+    ref: 'PlantType',
+    required: true
+  },
+  loc: {
+    type: [LocationSchema],
+    required: true
+  },
+  image:String
 });
 
 var Measurement = mongoose.model('Measurement', measurementSchema);
@@ -796,7 +839,7 @@ function isEmptyObject(obj) {
   return !Object.keys(obj).length;
 }
 
-server.listen(8000, function () {
+server.listen(cfg.serverPort, cfg.serverHost, function () {
   console.log('%s listening at %s', server.name, server.url);
 });
 
@@ -804,3 +847,50 @@ server.on('uncaughtException', function (req, res, route, err) {
   log.error('Uncaught error', err);
   return res.send(500, JSON.stringify('An error occured'));
 });
+
+/**
+ * @api {get} /boxes/:boxId/conditions/:measurement/:bounds?from-date=:fromDate&to-date:toDate&months=:months&hours=:hours Get percentages for each interval 
+ * @apiDescription Get the percentages and hours for a measurement of one box for each interval.
+ * @apiParam {ID} boxId SenseBox unique ID.
+ * @apiParam {ID} measurement Name of the measurement. One of: light, moisture, ph-value, soil-temperature
+ * @apiParam {Array} bounds Array of values which divide the measurement values into different classes
+ * @apiParam {String} from-date Beginning date of measurement data (default: 24 hours ago from now)
+ * @apiParam {String} to-date End date of measurement data (default: now)
+ * @apiParam {Array} months Array of Month as numbers (Jan=1,Feb=2,...) example: 2,3,4,5
+ * @apiParam {Array} hours Two numbers between 0-23 examples: 8-16 or 16-8
+ * @apiError {String} hours Start-hour/ end-hour needs a value between 0-23.
+ * @apiError {String} Date Date format false.
+ * @apiError {String} Measurement Measurement name not allowed.
+ * @apiSuccess {ObjectID} _id ObjectId of the box.
+ * @apiSuccess {String} name Name of the measurement (Light, soil_temp, moisture, ph_value)
+ * @apiSuccess {Array} intervals Interval bounds with percentage and hours
+ * @apiVersion 0.0.1
+ * @apiGroup Conditions
+ * @apiName GetIntervalPercentagesForOneMeasurement
+ * @apiSuccessExample Example data on success:
+ * {
+  "_id": "5386e44d5f08822009b8b614",
+  "name": "Light",
+  "intervals": [
+  {
+      "value_start": "0",
+      "value_end": "100",
+      "percentage": "58",
+      "hours": "6:00",
+    },
+   {
+      "value_start": "100",
+      "value_end": "200",
+      "percentage": "42",
+      "hours": "4:20",
+    },
+    {
+      "value_start": "200",
+      "value_end": "400",
+      "percentage": "20",
+      "hours": "2:10",
+    }
+  ],
+}
+ */
+function getConditions (req,res,next) {}
