@@ -1,0 +1,35 @@
+{   //strengthen rules
+        "bitwise": true,
+        "camelcase": false,
+        "curly": true,
+        "eqeqeq": true,
+        "forin": true,
+        "freeze": true,
+        "immed": true,
+        "latedef": "nofunc",
+        "maxcomplexity": 10,
+        "maxdepth": 5,
+        "maxlen": 200,
+        "maxparams" : 10,
+        "maxstatements" : 20,
+        "newcap" : true,
+        "noarg" : true,
+        "noempty" : true,
+        "nonbsp" : true,
+        "nonew" : true,
+        "quotmark" : true,
+        "strict" : true,
+        "trailing" : true,
+        "undef" : true,
+        "unused" : "vars",
+        "indent" : 2,
+        //extenuate rules
+        "sub" : true,
+        "globals" : {
+        "require" : false,
+                "process" : false,
+                "console" : false,
+                "Buffer"  : false
+        }
+
+}
