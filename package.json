@@ -42,8 +42,8 @@
     "apidoc": {
         "name": "OpenPlantMap API documentation",
         "version": "0.0.1",
-        "description": "Documentation for OpenSenseMap to register and administer SenseBoxes",
-        "title": "OpenSenseMap API docs title",
-        "url": "http://opensensemap.org:8000"
+        "description": "Documentation for OpenPlantMap to register and administer SenseBoxes",
+        "title": "OpenPlantMap API docs title",
+        "url": "http://localhost:8000"
     }
 }
