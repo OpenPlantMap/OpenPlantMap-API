@@ -31,7 +31,6 @@
                 "console" : false,
                 "Buffer"  : false,
                 "setTimeout" : false,
-                "exports" : false,
                 "module" : false
         }
 

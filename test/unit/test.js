@@ -1,5 +1,5 @@
+/*global beforeEach, describe, it */
 var mongoose = require('mongoose');
-var mocha = require('mocha');
 //var expect = require('chai').expect;
 var assert = require('assert');
 /**
@@ -14,7 +14,7 @@ var cfg = require('../../config');
 var config = {};
 config.dbURL = 'mongodb://' + cfg.dbHost + ':' + cfg.dbPort + '/' + cfg.dbNameTest;
 
-mocha.beforeEach(function (done) {
+beforeEach(function (done) {
     'use strict';
     function clearDB(callback) {
         for (var i=0; i< mongoose.connection.collections.length; i++) {
@@ -31,8 +31,7 @@ mocha.beforeEach(function (done) {
     }
     function doBefore(callback) {
         
-        clearDB(function () {
-            
+        clearDB(function () {           
             logger.debug('doBefore');
             initialize();
             done();
@@ -58,10 +57,10 @@ mocha.beforeEach(function (done) {
 });
 
 
-mocha.describe('Array', function () {
+describe('Array', function () {
     'use strict';
-    mocha.describe('#indexOf()', function () {
-        mocha.it('should return -1 when the value is not present', function () {
+    describe('#indexOf()', function () {
+        it('should return -1 when the value is not present', function () {
             assert.equal(-1, [1, 2, 3].indexOf(5));
             assert.equal(-1, [1, 2, 3].indexOf(0));
         });

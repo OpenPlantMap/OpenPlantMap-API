@@ -9,7 +9,7 @@ module.exports = function (grunt) {
             test: ['test/unit/test.js'],
             lint: [
                 'Gruntfile.js',
-                'test/lib/databaseObjects.js',
+               // 'test/lib/databaseObjects.js',
                 '<%=path.src%>',
                 '<%=path.test%>'
             ]
@@ -39,5 +39,5 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-contrib-watch');
     grunt.loadNpmTasks('grunt-mocha-test');
     grunt.loadNpmTasks('grunt-notify');
-    grunt.registerTask('default', 'mochaTest:test');
+    grunt.registerTask('default', ['jshint', 'mochaTest:test']);
 };
