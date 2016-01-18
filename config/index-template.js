@@ -4,6 +4,8 @@ exports.dbuser = '';
 exports.dbuserpass = '';
 exports.dbHost = '';
 exports.dbPort = '';
+exports.dbName = 'oplm';
+exports.dbNameTest = 'oplm_Test';
 exports.serverHost = '';
 exports.serverPort = '';
 

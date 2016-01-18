@@ -1,16 +1,16 @@
-var restify = require('restify'),
-        mongoose = require('mongoose'),
-        timestamp = require('mongoose-timestamp'),
-        fs = require('fs'),
-        GeoJSON = require('geojson'),
-        _ = require('lodash'),
-        products = require('./products'),
-        cfg = require('./config'),
-        json2csv = require('json2csv'),
-        Stream = require('stream'),
-        nodemailer = require('nodemailer'),
-        smtpTransport = require('nodemailer-smtp-transport'),
-        htmlToText = require('nodemailer-html-to-text').htmlToText;
+var restify = require('restify');
+var mongoose = require('mongoose');
+var timestamp = require('mongoose-timestamp');
+var fs = require('fs');
+var GeoJSON = require('geojson');
+var _ = require('lodash');
+var products = require('./products');
+var cfg = require('./config');
+var json2csv = require('json2csv');
+var Stream = require('stream');
+var nodemailer = require('nodemailer');
+var smtpTransport = require('nodemailer-smtp-transport');
+var htmlToText = require('nodemailer-html-to-text').htmlToText;
 
 var dbHost = process.env.DB_HOST || cfg.dbHost || 'db';
 
@@ -69,7 +69,7 @@ server.use(restify.bodyParser());
 // use this function to retry if a connection cannot be established immediately
 var connectWithRetry = function () {
     'use strict';
-    mongoose.connect('mongodb://' + dbHost + ':' + cfg.dbPort + '/OPlM-api', {
+    mongoose.connect('mongodb://' + dbHost + ':' + cfg.dbPort + '/' + cfg.dbName, {
         keepAlive: 1,
         user: cfg.dbuser,
         pass: cfg.dbuserpass,
@@ -78,7 +78,7 @@ var connectWithRetry = function () {
         if (err) {
             console.error('Failed to connect to mongo on startup with auth- try without', err);
             mongoose.disconnect();
-            mongoose.connect('mongodb://' + dbHost + ':' + cfg.dbPort + '/OPlM-api', {
+            mongoose.connect('mongodb://' + dbHost + ':' + cfg.dbPort + '/' + cfg.dbName, {
                 keepAlive: 1
             }, function (err) {
                 if (err) {
@@ -213,47 +213,48 @@ var userSchema = new Schema({
         }
     ]
 });
-var plantTypeSchema = new Schema({
-    name: [String],
-    latinName: {
-        type: String,
-        required: true
-    },
-    phCondition: {
-        min: Number,
-        max: Number
-    },
-    moistureCondition: {
-        min: Number,
-        max: Number
-    },
-    sunLightCondition: {
-        min: Number,
-        max: Number
-    },
-    temperatureCondition: {
-        min: Number,
-        max: Number
-    },
-    image: String
-});
-var plantSchema = new Schema({
-    plantType: {
-        type: Schema.Types.ObjectId,
-        ref: 'PlantType',
-        required: true
-    },
-    loc: {
-        type: [LocationSchema],
-        required: true
-    },
-    image: String
-});
-
+//var plantTypeSchema = new Schema({
+//    name: [String],
+//    latinName: {
+//        type: String,
+//        required: true
+//    },
+//    phCondition: {
+//        min: Number,
+//        max: Number
+//    },
+//    moistureCondition: {
+//        min: Number,
+//        max: Number
+//    },
+//    sunLightCondition: {
+//        min: Number,
+//        max: Number
+//    },
+//    temperatureCondition: {
+//        min: Number,
+//        max: Number
+//    },
+//    image: String
+//});
+//var plantSchema = new Schema({
+//    plantType: {
+//        type: Schema.Types.ObjectId,
+//        ref: 'PlantType',
+//        required: true
+//    },
+//    loc: {
+//        type: [LocationSchema],
+//        required: true
+//    },
+//    image: String
+//});
+/*jshint -W098*/
 var Measurement = mongoose.model('Measurement', measurementSchema);
 var Box = mongoose.model('Box', boxSchema);
 var Sensor = mongoose.model('Sensor', sensorSchema);
 var User = mongoose.model('User', userSchema);
+/*jshint -W098*/
 
 var PATH = '/boxes';
 var userPATH = 'users';
@@ -276,6 +277,8 @@ server.post({path: PATH + '/:boxId/:sensorId', version: '0.0.1'}, postNewMeasure
 server.put({path: PATH + '/:boxId', version: '0.0.1'}, updateBox);
 
 server.get({path: userPATH + '/:boxId', version: '0.0.1'}, validApiKey);
+
+server.get({path: '/boxes/:boxId/conditions/:measurement/:bounds', version: '0.0.1'}, getConditions);
 
 function unknownMethodHandler(req, res) {
     'use strict';
@@ -757,7 +760,7 @@ function customizeInoFileLine(line, output, box) {
     } else {
         fs.appendFileSync(output, line.toString() + '\n');
     }
-/* jshint ignore:end */
+    /* jshint ignore:end */
 }
 /**
  * @api {post} /boxes Post new SenseBox
@@ -804,7 +807,7 @@ function postNewBox(req, res, next) {
                         log.debug(output);
 
                         fs.readFileSync(filename).toString().split('\n').forEach(function (line) {
-                            customizeInoFileLine(line,output,box);
+                            customizeInoFileLine(line, output, box);
                         });
 
                         savedBox = box;
@@ -884,10 +887,10 @@ function sendWelcomeMail(user, box) {
     });
 }
 
-function isEmptyObject(obj) {
-    'use strict';
-    return !Object.keys(obj).length;
-}
+//function isEmptyObject(obj) {
+//    'use strict';
+//    return !Object.keys(obj).length;
+//}
 
 server.listen(cfg.serverPort, cfg.serverHost, function () {
     'use strict';
@@ -901,21 +904,24 @@ server.on('uncaughtException', function (req, res, route, err) {
 });
 
 /**
- * @api {get} /boxes/:boxId/conditions/:measurement/:bounds?from-date=:fromDate&to-date:toDate&months=:months&hours=:hours Get percentages for each interval 
+ * @api {get} /boxes/:boxId/conditions/:measurement/:bounds?months=:months&hours=:hours Get percentages for each interval 
  * @apiDescription Get the percentages and hours for a measurement of one box for each interval.
  * @apiParam {ID} boxId SenseBox unique ID.
- * @apiParam {ID} measurement Name of the measurement. One of: light, moisture, ph-value, soil-temperature
- * @apiParam {Array} bounds Array of values which divide the measurement values into different classes
- * @apiParam {String} from-date Beginning date of measurement data (default: 24 hours ago from now)
- * @apiParam {String} to-date End date of measurement data (default: now)
- * @apiParam {Array} months Array of Month as numbers (Jan=1,Feb=2,...) example: 2,3,4,5
- * @apiParam {Array} hours Two numbers between 0-23 examples: 8-16 or 16-8
- * @apiError {String} hours Start-hour/ end-hour needs a value between 0-23.
- * @apiError {String} Date Date format false.
- * @apiError {String} Measurement Measurement name not allowed.
+ * @apiParam {String} measurement Name of the measurement. One of: light, moisture, ph-value, soil-temperature
+ * @apiParam {Array} bounds Array of values which divide the measurement values into different classes. Example: [0,100,200,400]
+ * @apiParam {String} months Interval of months. (Jan=1,Feb=2,...) Example: 2-5, or 10-2
+ * @apiParam {String} hours Two numbers between [0-23] examples: 8-16 or 16-8
+ * @apiError {String} boxId boxId does not exist in the database.
+ * @apiError {String} measurement Measurement name not allowed.
+ * @apiError {String} bounds Format for bounds has to be an Array of numbers or one single number.
+ * @apiError {String} bounds_ The numbers for the bounds need to be sorted from small to big.
+ * @apiError {String} month Format for month not correct. It has to be like: 2-5, or 10-2.
+ * @apiError {String} month_ Numbers for months not correct. The value has to be between [1-12]. (Jan=1,Feb=2,...)
+ * @apiError {String} hours Format for hours not correct. It has to be like: 0-23.
+ * @apiError {String} hours_ Start-hour/ end-hour needs a value between 0-23.
  * @apiSuccess {ObjectID} _id ObjectId of the box.
  * @apiSuccess {String} name Name of the measurement (Light, soil_temp, moisture, ph_value)
- * @apiSuccess {Array} intervals Interval bounds with percentage and hours
+ * @apiSuccess {Array} intervals An interval object contains the interval bounds, the calculated value in % and the computed hours for that interval
  * @apiVersion 0.0.1
  * @apiGroup Conditions
  * @apiName GetIntervalPercentagesForOneMeasurement
@@ -942,9 +948,11 @@ server.on('uncaughtException', function (req, res, route, err) {
  "percentage": "20",
  "hours": "2:10",
  }
- ],
+ ]
  }
  */
 function getConditions(req, res, next) {
     'use strict';
+    //find the box
+    
 }

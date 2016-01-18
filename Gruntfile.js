@@ -6,9 +6,10 @@ module.exports = function (grunt) {
             src: [
                 'app.js'
             ],
-            test: [],
+            test: ['test/unit/test.js'],
             lint: [
                 'Gruntfile.js',
+                'test/lib/databaseObjects.js',
                 '<%=path.src%>',
                 '<%=path.test%>'
             ]
@@ -28,7 +29,7 @@ module.exports = function (grunt) {
         },
         watch: {
             files: '<%=path.lint%>',
-            tasks: 'mochaTest:test'
+            tasks: ['jshint', 'mochaTest:test']
         }
 
 

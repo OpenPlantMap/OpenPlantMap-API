@@ -1,0 +1,16 @@
+{
+	"appenders":[
+		{
+			"type":"console",
+			"layout":{
+				"type":"pattern",
+				"pattern":"[%d{ISO8601}] %[%p%] [%[%c%]] - %m%n"
+			}
+		}
+	],
+	"levels":{
+		"analyseConditions": "INFO",
+                "analyseConditionsTest": "INFO"
+
+	}
+}

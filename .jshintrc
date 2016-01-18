@@ -29,7 +29,10 @@
         "require" : false,
                 "process" : false,
                 "console" : false,
-                "Buffer"  : false
+                "Buffer"  : false,
+                "setTimeout" : false,
+                "exports" : false,
+                "module" : false
         }
 
 }
