@@ -213,51 +213,57 @@ var userSchema = new Schema({
         }
     ]
 });
-//var plantTypeSchema = new Schema({
-//    name: [String],
-//    latinName: {
-//        type: String,
-//        required: true
-//    },
-//    phCondition: {
-//        min: Number,
-//        max: Number
-//    },
-//    moistureCondition: {
-//        min: Number,
-//        max: Number
-//    },
-//    sunLightCondition: {
-//        min: Number,
-//        max: Number
-//    },
-//    temperatureCondition: {
-//        min: Number,
-//        max: Number
-//    },
-//    image: String
-//});
-//var plantSchema = new Schema({
-//    plantType: {
-//        type: Schema.Types.ObjectId,
-//        ref: 'PlantType',
-//        required: true
-//    },
-//    loc: {
-//        type: [LocationSchema],
-//        required: true
-//    },
-//    image: String
-//});
-/*jshint -W098*/
+var planttypeSchema = new Schema({
+  name:[String],
+  latinName: {
+    type: String,
+    required: true
+  },
+  phCondition: {
+    min: Number,
+    max: Number
+  },
+  moistureCondition: {
+    min: Number,
+    max: Number
+  },
+  sunLightCondition: {
+    min: Number,
+    max: Number
+  },
+  temperatureCondition: {
+    min: Number,
+    max: Number
+  },
+  image:String
+});
+var plantSchema = new Schema({
+ plantType:{
+    type: Schema.Types.ObjectId,
+    ref: 'Planttype',
+    required: true
+  },
+  loc: {
+    type: Array,
+    required: true
+  },
+  image:String
+});
+
 var Measurement = mongoose.model('Measurement', measurementSchema);
 var Box = mongoose.model('Box', boxSchema);
 var Sensor = mongoose.model('Sensor', sensorSchema);
 var User = mongoose.model('User', userSchema);
+var Planttype = mongoose.model('Planttype', planttypeSchema);
+var Plant = mongoose.model('Plant', plantSchema);
+
 /*jshint -W098*/
 
 var PATH = '/boxes';
 var userPATH = 'users';
+var PATH_plants = '/plants';
+var PATH_plantTypes = '/planttypes';
+
 
 server.pre(function (request, response, next) {
     'use strict';
@@ -265,16 +271,23 @@ server.pre(function (request, response, next) {
     next();
 });
 
-server.get({path: PATH, version: '0.0.1'}, findAllBoxes);
-server.get({path: /(boxes)\.([a-z]+)/, version: '0.0.1'}, findAllBoxes);
-server.get({path: PATH + '/:boxId', version: '0.0.1'}, findBox);
-server.get({path: PATH + '/:boxId/sensors', version: '0.0.1'}, getMeasurements);
-server.get({path: PATH + '/:boxId/data/:sensorId', version: '0.0.1'}, getData);
+server.get({path : PATH , version : '0.0.1'} , findAllBoxes);
+server.get({path : /(boxes)\.([a-z]+)/, version : '0.0.1'} , findAllBoxes);
+server.get({path : PATH +'/:boxId' , version : '0.0.1'} , findBox);
+server.get({path : PATH +'/:boxId/sensors', version : '0.0.1'}, getMeasurements);
+server.get({path : PATH +'/:boxId/data/:sensorId', version : '0.0.1'}, getData);
+server.get({path: PATH_plants, version : '0.0.1'}, findAllPlants);
+server.get({path: PATH_plants +'/:plantId', version : '0.0.1'}, findPlant);
+server.get({path: PATH_plantTypes, version : '0.0.1'}, findAllPlantTypes);
+server.get({path: PATH_plantTypes + '/:planttypeId', version: '0.0.1'}, findPlantType);
+server.get({path: PATH_plantTypes + 'by/:latinname', version: '0.0.1'}, getPlantTypeByLatinName);
+server.get({path: PATH_plantTypes + 'bycommon/:name', version: '0.0.1'}, getPlantTypeByCommonName);
+server.get({path: PATH_plants +'byType/:planttypeId', version: '0.0.1'}, getAllPlantsByTypeId);
 
-server.post({path: PATH, version: '0.0.1'}, postNewBox);
-server.post({path: PATH + '/:boxId/:sensorId', version: '0.0.1'}, postNewMeasurement);
-
-server.put({path: PATH + '/:boxId', version: '0.0.1'}, updateBox);
+server.post({path : PATH , version: '0.0.1'} ,postNewBox);
+server.post({path : PATH +'/:boxId/:sensorId' , version : '0.0.1'}, postNewMeasurement);
+server.post({path: PATH_plants +'/:planttypeId', version : '0.0.1'}, postNewPlant);
+server.post({path: PATH_plantTypes +'/:latinName/:commonNames/:pH_min/:pH_max/:mois_min/:mois_max/:temp_min/:temp_max/:sun_min/:sun_max', version : '0.0.1'}, postNewPlantType);
 
 server.get({path: userPATH + '/:boxId', version: '0.0.1'}, validApiKey);
 
@@ -344,10 +357,9 @@ function decodeBase64Image(dataString) {
         return new Error('Invalid input string');
     }
 
-    response.type = matches[1];
-    response.data = new Buffer(matches[2], 'base64');
-
-    return response;
+  response.type = matches[1];
+  response.data = new Buffer(matches[2], 'base64');
+  return response;
 }
 
 /**
@@ -426,6 +438,40 @@ function getMeasurements(req, res, next) {
             res.send(201, sensors);
         }
     });
+}
+
+function getPlantTypeByCommonName(req,res,next){
+	Planttype.findOne({name: req.params.name}).populate('').exec(function(error, planttype){
+		if (error){
+			return next(new resify.InvalidArgumentError(JSON.stringify(error.errors)));
+		} else {
+			log.debug(req.params.name + " succesfully found in database.");
+			res.send(201,planttype);
+		}
+	});
+}
+
+function getPlantTypeByLatinName(req, res, next){
+	Planttype.findOne({latinName: req.params.latinname}).populate('').exec(function(error, planttype){
+		if (error){
+			return next(new resify.InvalidArgumentError(JSON.stringify(error.errors)));
+		} else {
+			log.debug(req.params.latinname + " succesfully found in database.");
+			res.send(201,planttype);
+		}
+	});
+}
+
+function getAllPlantsByTypeId(req, res, next){
+	Plant.find({plantType: req.params.planttypeId}).populate('').exec(function(error, plants){
+		if (error){
+			console.log("error: "+error);
+			return next(new resify.InvalidArgumentError(JSON.stringify(error.errors)));
+		} else {
+			log.debug("sucessfully found all plants of PlanttypeId "+ req.params.planttypeId+".");
+			res.send(201,plants);
+		}
+	});
 }
 
 /**
@@ -513,6 +559,60 @@ function getData(req, res, next) {
             });
 }
 
+/**
+* @api {post} planttypes/:latinName/:commonNames/:pH_min/:pH_max/:mois_min/:mois_max/:temp_min/:temp_max/:sun_min/:sun_max
+* @apiDescription inserts a new plantType into the database.
+* @apiVersion 0.0.1
+* @apiGroup Planttypes
+* @apiName postNewPlantType
+* @apiParam {name} Array of common names for the plant type
+* @apiParam {latinName} String of the specific latin name for the plant type
+* @apiParam {pHCondition} pH Condition Min and Max value for the plant type
+* @apiParam {moistureCondition} moisture Condition Min and Max value for the plant type
+* @apiParam {sunlightCondition} sunlight Condition Min and Max value for the plant type
+* @apiParam {temperatureCondition} temperature Condition Min and Max value for the plant type
+*/
+function postNewPlantType(req, res, next){
+	var json = JSON.parse(req.body);
+	newPlantTypeData = {
+		name :[],
+		latinName: req.params.latinName,
+		phCondition: {
+			min: req.params.pH_min,
+			max: req.params.pH_max
+		}, 
+		moistureCondition: {
+			min: req.params.mois_min,
+			max: req.params.mois_max
+		},
+		sunLightCondition: {
+			min: req.params.sun_min,
+			max: req.params.sun_max
+		},
+		temperatureCondition: {
+			min: req.params.temp_min,
+			max: req.params.temp_max
+		},
+		image:json.image
+	};
+
+	var imageBuffer = decodeBase64Image(json.image);
+	req.params.commonNames.split('ZZZ').forEach(function (line) {
+		newPlantTypeData.name.push(line);
+	});
+	newPlantType = new Planttype(newPlantTypeData);
+	
+	newPlantType.save(function(err){
+		if (err) return next(new restify.InvalidArgumentError(JSON.stringify(err.errors)));
+		var fileName = "/var/www/OpenPlantMap/app/planttypeimages/" + newPlantType._id + '.jpeg';
+		fs.writeFile(fileName, imageBuffer.data, function(error){
+			if (error) log.debug(error);
+			log.debug("PlantType-ImageFile successfully created on server.");
+		});
+		res.send(201, newPlantType);
+		log.debug("PlantType successfully saved in database.");
+	});
+}
 
 /**
  * @api {post} /boxes/:boxId/:sensorId Post new measurement
@@ -668,15 +768,114 @@ function findBox(req, res, next) {
     //}
 }
 
-function createNewUser(req) {
+
+
+
+/**
+ * @api {get} /planttypes/:planttypeId Get One Planttype
+ * @apiName findPlantType
+ * @apiGroup Planttypes
+ * @apiVersion 0.0.1
+ * @apiParam {ID} planttypeId Planttype unique ID.
+ * @apiSampleRequest http://opensensemap.org:8000/planttypes/569e3482d2c2658023d28fbc
+ */
+function findPlantType(req, res, next){
+	Planttype.findOne({_id: req.params.planttypeId}).populate('').exec(function(error, planttype){
+		if (error){
+			return next(new resify.InvalidArgumentError(JSON.stringify(error.errors)));
+		} else {
+			debug.log(req.params.id + " succesfully found in database.");
+			res.send(201,planttype);
+		}
+	});
+}
+
+/**
+ * @api {get} /planttypes Get all Plant Types
+ * @apiName findAllPlantTypes 
+ * @apiGroup Plants
+ * @apiVersion 0.0.1
+ * @apiSampleRequest http://opensensemap.org:8000/planttypes
+ */
+function findAllPlantTypes(req, res, next){
+	Planttype.find({}).populate('').exec(function(err,planttypes){
+		res.send(planttypes);
+	});
+}
+
+/**
+ * @api {get} /plants/:plantId Get One Plant
+ * @apiName findPlant
+ * @apiGroup Planta
+ * @apiVersion 0.0.1
+ * @apiParam {ID} plantId Plant unique ID.
+ * @apiSampleRequest http://opensensemap.org:8000/plant/569e3482d2c2658023d28fbc
+ */
+function findPlant(req,res,next){
+	Plant.findOne({_id: req.params.plantId}).populate('').exec(function(error, plant){
+		if (error){
+			return next(new resify.InvalidArgumentError(JSON.stringify(error.errors)));
+		} else {
+			debug.log(req.params.id + " succesfully found in database.");
+			res.send(201,plant);
+		}
+	});
+}
+
+/**
+ * @api {get} /plants Get all Plant Types
+ * @apiName findAllPlant
+ * @apiGroup Plants
+ * @apiVersion 0.0.1
+ * @apiSampleRequest http://opensensemap.org:8000/plants
+ */
+function findAllPlants(req,res,next){
+	Plant.find({}).populate('').exec(function(err,plants){
+		res.send(plants);
+	});
+}
+
+/**
+* @api {post} plants/:planttypeId
+* @apiDescription inserts a new plant into the database.
+* @apiVersion 0.0.1
+* @apiGroup Plants
+* @apiName postNewPlant
+* @apiParam {planttypeId} planttypeId Planttype specified by its planttypeID of the new posted plant
+*/
+function postNewPlant(req,res,next){
+	var json = JSON.parse(req.body);
+	newPlantData = {
+		plantType: req.params.planttypeId,
+		loc: json.loc,
+		image:json.image
+	};
+	var imageBuffer = decodeBase64Image(json.image);
+
+	newPlant = new Plant(newPlantData);
+
+	newPlant.save(function(err){
+
+		if (err) return next(new restify.InvalidArgumentError(JSON.stringify(err.errors)));
+		var fileName = "/var/www/OpenPlantMap/app/plantimages/" + newPlant._id + '.jpeg';
+		fs.writeFile(fileName, imageBuffer.data, function(error){
+			if (error) log.debug(error);
+			log.debug("Plant-ImageFile successfully created on server.");
+		});
+		res.send(201, newPlant);
+		log.debug("Plant successfully saved in database.");
+	});
+}
+
+function createNewUser (req) {
     'use strict';
-    var userData = {
-        firstname: req.params.user.firstname,
-        lastname: req.params.user.lastname,
-        email: req.params.user.email,
-        apikey: req.params.orderID,
-        boxes: []
-    };
+  var userData = {
+    firstname: req.params.user.firstname,
+    lastname: req.params.user.lastname,
+    email: req.params.user.email,
+    apikey: req.params.orderID,
+    boxes: []
+  }
 
     var user = new User(userData);
 
@@ -927,32 +1126,30 @@ server.on('uncaughtException', function (req, res, route, err) {
  * @apiName GetIntervalPercentagesForOneMeasurement
  * @apiSuccessExample Example data on success:
  * {
- "_id": "5386e44d5f08822009b8b614",
- "name": "Light",
- "intervals": [
- {
- "value_start": "0",
- "value_end": "100",
- "percentage": "58",
- "hours": "6:00",
- },
- {
- "value_start": "100",
- "value_end": "200",
- "percentage": "42",
- "hours": "4:20",
- },
- {
- "value_start": "200",
- "value_end": "400",
- "percentage": "20",
- "hours": "2:10",
- }
- ]
- }
+  "_id": "5386e44d5f08822009b8b614",
+  "name": "Light",
+  "intervals": [
+  {
+      "value_start": "0",
+      "value_end": "100",
+      "percentage": "58",
+      "hours": "6:00",
+    },
+   {
+      "value_start": "100",
+      "value_end": "200",
+      "percentage": "42",
+      "hours": "4:20",
+    },
+    {
+      "value_start": "200",
+      "value_end": "400",
+      "percentage": "20",
+      "hours": "2:10",
+    }
+  ],
+}
  */
-function getConditions(req, res, next) {
+function getConditions (req,res,next) {
     'use strict';
-    //find the box
-    
 }
