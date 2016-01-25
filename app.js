@@ -206,7 +206,7 @@ var userSchema = new Schema({
     }
   ]
 });
-var plantTypeSchema = new Schema({
+var planttypeSchema = new Schema({
   name:[String],
   latinName: {
     type: String,
@@ -231,13 +231,13 @@ var plantTypeSchema = new Schema({
   image:String
 });
 var plantSchema = new Schema({
-  plantType:{
+ plantType:{
     type: Schema.Types.ObjectId,
-    ref: 'PlantType',
+    ref: 'Planttype',
     required: true
   },
   loc: {
-    type: [LocationSchema],
+    type: Array,
     required: true
   },
   image:String
@@ -247,13 +247,15 @@ var Measurement = mongoose.model('Measurement', measurementSchema);
 var Box = mongoose.model('Box', boxSchema);
 var Sensor = mongoose.model('Sensor', sensorSchema);
 var User = mongoose.model('User', userSchema);
-var PlantType = mongoose.model('PlantType', plantTypeSchema);
+var Planttype = mongoose.model('Planttype', planttypeSchema);
 var Plant = mongoose.model('Plant', plantSchema);
+
 
 var PATH = '/boxes';
 var userPATH = 'users';
 var PATH_plants = '/plants';
 var PATH_plantTypes = '/planttypes';
+
 
 server.pre(function (request,response,next) {
   request.log.info({req: request}, 'REQUEST');
@@ -266,14 +268,17 @@ server.get({path : PATH +'/:boxId' , version : '0.0.1'} , findBox);
 server.get({path : PATH +'/:boxId/sensors', version : '0.0.1'}, getMeasurements);
 server.get({path : PATH +'/:boxId/data/:sensorId', version : '0.0.1'}, getData);
 server.get({path: PATH_plants, version : '0.0.1'}, findAllPlants);
-server.get({path: PATH_plants +'/:plantID', version : '0.0.1'}, findPlant);
+server.get({path: PATH_plants +'/:plantId', version : '0.0.1'}, findPlant);
 server.get({path: PATH_plantTypes, version : '0.0.1'}, findAllPlantTypes);
-server.get({path: PATH_plantTypes + '/:plantTypeID', version: '0.0.1'}, findPlantType);
+server.get({path: PATH_plantTypes + '/:planttypeId', version: '0.0.1'}, findPlantType);
+server.get({path: PATH_plantTypes + 'by/:latinname', version: '0.0.1'}, getPlantTypeByLatinName);
+server.get({path: PATH_plantTypes + 'bycommon/:name', version: '0.0.1'}, getPlantTypeByCommonName);
+server.get({path: PATH_plants +'byType/:planttypeId', version: '0.0.1'}, getAllPlantsByTypeId);
 
 server.post({path : PATH , version: '0.0.1'} ,postNewBox);
 server.post({path : PATH +'/:boxId/:sensorId' , version : '0.0.1'}, postNewMeasurement);
-server.post({path: PATH_plants, version : '0.0.1'}, postNewPlant);
-server.post({path: Path_plantTypes, version : '0.0.1'}, postNewPlantType);
+server.post({path: PATH_plants +'/:planttypeId', version : '0.0.1'}, postNewPlant);
+server.post({path: PATH_plantTypes +'/:latinName/:commonNames/:pH_min/:pH_max/:mois_min/:mois_max/:temp_min/:temp_max/:sun_min/:sun_max', version : '0.0.1'}, postNewPlantType);
 
 server.put({path: PATH + '/:boxId' , version: '0.0.1'} , updateBox);
 
@@ -313,7 +318,7 @@ server.on('MethodNotAllowed', unknownMethodHandler);
  * @apiVersion 0.0.1
  * @apiGroup Boxes
  * @apiName updateBox
- */postNe
+ */
 function validApiKey (req,res,next) {
   User.findOne({apikey:req.headers['x-apikey']}, function (error, user) {
     if (error) {
@@ -338,7 +343,6 @@ function decodeBase64Image(dataString) {
 
   response.type = matches[1];
   response.data = new Buffer(matches[2], 'base64');
-
   return response;
 }
 
@@ -408,6 +412,40 @@ function getMeasurements(req, res, next) {
       res.send(201,sensors);
     }
   });
+}
+
+function getPlantTypeByCommonName(req,res,next){
+	Planttype.findOne({name: req.params.name}).populate('').exec(function(error, planttype){
+		if (error){
+			return next(new resify.InvalidArgumentError(JSON.stringify(error.errors)));
+		} else {
+			log.debug(req.params.name + " succesfully found in database.");
+			res.send(201,planttype);
+		}
+	});
+}
+
+function getPlantTypeByLatinName(req, res, next){
+	Planttype.findOne({latinName: req.params.latinname}).populate('').exec(function(error, planttype){
+		if (error){
+			return next(new resify.InvalidArgumentError(JSON.stringify(error.errors)));
+		} else {
+			log.debug(req.params.latinname + " succesfully found in database.");
+			res.send(201,planttype);
+		}
+	});
+}
+
+function getAllPlantsByTypeId(req, res, next){
+	Plant.find({plantType: req.params.planttypeId}).populate('').exec(function(error, plants){
+		if (error){
+			console.log("error: "+error);
+			return next(new resify.InvalidArgumentError(JSON.stringify(error.errors)));
+		} else {
+			log.debug("sucessfully found all plants of PlanttypeId "+ req.params.planttypeId+".");
+			res.send(201,plants);
+		}
+	});
 }
 
 /**
@@ -490,6 +528,60 @@ function getData(req, res, next) {
   });
 }
 
+/**
+* @api {post} planttypes/:latinName/:commonNames/:pH_min/:pH_max/:mois_min/:mois_max/:temp_min/:temp_max/:sun_min/:sun_max
+* @apiDescription inserts a new plantType into the database.
+* @apiVersion 0.0.1
+* @apiGroup Planttypes
+* @apiName postNewPlantType
+* @apiParam {name} Array of common names for the plant type
+* @apiParam {latinName} String of the specific latin name for the plant type
+* @apiParam {pHCondition} pH Condition Min and Max value for the plant type
+* @apiParam {moistureCondition} moisture Condition Min and Max value for the plant type
+* @apiParam {sunlightCondition} sunlight Condition Min and Max value for the plant type
+* @apiParam {temperatureCondition} temperature Condition Min and Max value for the plant type
+*/
+function postNewPlantType(req, res, next){
+	var json = JSON.parse(req.body);
+	newPlantTypeData = {
+		name :[],
+		latinName: req.params.latinName,
+		phCondition: {
+			min: req.params.pH_min,
+			max: req.params.pH_max
+		}, 
+		moistureCondition: {
+			min: req.params.mois_min,
+			max: req.params.mois_max
+		},
+		sunLightCondition: {
+			min: req.params.sun_min,
+			max: req.params.sun_max
+		},
+		temperatureCondition: {
+			min: req.params.temp_min,
+			max: req.params.temp_max
+		},
+		image:json.image
+	};
+
+	var imageBuffer = decodeBase64Image(json.image);
+	req.params.commonNames.split('ZZZ').forEach(function (line) {
+		newPlantTypeData.name.push(line);
+	});
+	newPlantType = new Planttype(newPlantTypeData);
+	
+	newPlantType.save(function(err){
+		if (err) return next(new restify.InvalidArgumentError(JSON.stringify(err.errors)));
+		var fileName = "/var/www/OpenPlantMap/app/planttypeimages/" + newPlantType._id + '.jpeg';
+		fs.writeFile(fileName, imageBuffer.data, function(error){
+			if (error) log.debug(error);
+			log.debug("PlantType-ImageFile successfully created on server.");
+		});
+		res.send(201, newPlantType);
+		log.debug("PlantType successfully saved in database.");
+	});
+}
 
 /**
  * @api {post} /boxes/:boxId/:sensorId Post new measurement
@@ -640,68 +732,103 @@ function findBox(req, res, next) {
   }
 }
 
+
+
+
 /**
- * @api {get} /plants Get all Plants
- * @apiName findAllPlants
+ * @api {get} /planttypes/:planttypeId Get One Planttype
+ * @apiName findPlantType
+ * @apiGroup Planttypes
+ * @apiVersion 0.0.1
+ * @apiParam {ID} planttypeId Planttype unique ID.
+ * @apiSampleRequest http://opensensemap.org:8000/planttypes/569e3482d2c2658023d28fbc
+ */
+function findPlantType(req, res, next){
+	Planttype.findOne({_id: req.params.planttypeId}).populate('').exec(function(error, planttype){
+		if (error){
+			return next(new resify.InvalidArgumentError(JSON.stringify(error.errors)));
+		} else {
+			debug.log(req.params.id + " succesfully found in database.");
+			res.send(201,planttype);
+		}
+	});
+}
+
+/**
+ * @api {get} /planttypes Get all Plant Types
+ * @apiName findAllPlantTypes 
+ * @apiGroup Plants
+ * @apiVersion 0.0.1
+ * @apiSampleRequest http://opensensemap.org:8000/planttypes
+ */
+function findAllPlantTypes(req, res, next){
+	Planttype.find({}).populate('').exec(function(err,planttypes){
+		res.send(planttypes);
+	});
+}
+
+/**
+ * @api {get} /plants/:plantId Get One Plant
+ * @apiName findPlant
+ * @apiGroup Planta
+ * @apiVersion 0.0.1
+ * @apiParam {ID} plantId Plant unique ID.
+ * @apiSampleRequest http://opensensemap.org:8000/plant/569e3482d2c2658023d28fbc
+ */
+function findPlant(req,res,next){
+	Plant.findOne({_id: req.params.plantId}).populate('').exec(function(error, plant){
+		if (error){
+			return next(new resify.InvalidArgumentError(JSON.stringify(error.errors)));
+		} else {
+			debug.log(req.params.id + " succesfully found in database.");
+			res.send(201,plant);
+		}
+	});
+}
+
+/**
+ * @api {get} /plants Get all Plant Types
+ * @apiName findAllPlant
  * @apiGroup Plants
  * @apiVersion 0.0.1
  * @apiSampleRequest http://opensensemap.org:8000/plants
  */
-function findAllPlants(req, res , next){
-  Plant.find({}).populate('plants').exec(function(err,plants){
-    if (req.params[1] === "json" || req.params[1] === undefined) {
-      res.send(plants);
-    } else if (req.params[1] === "geojson") {
-      tmp = JSON.stringify(plants);
-      tmp = JSON.parse(tmp);
-      var geojson = _.transform(tmp, function(result, n) {
-        lat = n.loc[0].geometry.coordinates[1];
-        lng = n.loc[0].geometry.coordinates[0];
-        delete n["loc"];
-        n["lat"] = lat;
-        n["lng"] = lng;
-        return result.push(n);
-      });
-      res.send(GeoJSON.parse(geojson, {Point: ['lat','lng']}));
-    }
-  });
+function findAllPlants(req,res,next){
+	Plant.find({}).populate('').exec(function(err,plants){
+		res.send(plants);
+	});
 }
 
 /**
- * @api {get} /plants/:plantID Get one Plant
- * @apiName findPlant
- * TODO
- */
-function findPlant(req, res, next) {
-	// TODO
-}
+* @api {post} plants/:planttypeId
+* @apiDescription inserts a new plant into the database.
+* @apiVersion 0.0.1
+* @apiGroup Plants
+* @apiName postNewPlant
+* @apiParam {planttypeId} planttypeId Planttype specified by its planttypeID of the new posted plant
+*/
+function postNewPlant(req,res,next){
+	var json = JSON.parse(req.body);
+	newPlantData = {
+		plantType: req.params.planttypeId,
+		loc: json.loc,
+		image:json.image
+	};
+	var imageBuffer = decodeBase64Image(json.image);
 
-/**
- * TODO
- */
-function findPlantType(req, res , next){
-	// TODO
-}
+	newPlant = new Plant(newPlantData);
 
-/**
- * TODO
- */
-function findAllPlantTypes(req, res, next) {
-	// TODO
-}
+	newPlant.save(function(err){
 
-/**
- * TODO
- */
-function postNewPlant(req, res, next) {
-// TODO
-}
-
-/**
- * TODO
- */
-function postNewPlantType(req, res, next) {
-// TODO
+		if (err) return next(new restify.InvalidArgumentError(JSON.stringify(err.errors)));
+		var fileName = "/var/www/OpenPlantMap/app/plantimages/" + newPlant._id + '.jpeg';
+		fs.writeFile(fileName, imageBuffer.data, function(error){
+			if (error) log.debug(error);
+			log.debug("Plant-ImageFile successfully created on server.");
+		});
+		res.send(201, newPlant);
+		log.debug("Plant successfully saved in database.");
+	});
 }
 
 function createNewUser (req) {
