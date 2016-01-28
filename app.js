@@ -991,13 +991,13 @@ function postNewBox(req, res, next) {
                     var filename = '';
                     switch (req.params.model) {
                         case 'homeEthernet':
-                            filename = 'files/template_home/template_home.ino';
+                            filename = cfg.pathToApp + 'files/template_home/template_home.ino';
                             break;
                         case 'basicEthernet':
-                            filename = 'files/template_basic/template_basic.ino';
+                            filename = cfg.pathToApp + 'files/template_basic/template_basic.ino';
                             break;
                         default:
-                            filename = 'files/template_custom_setup/template_custom_setup.ino';
+                            filename = cfg.pathToApp + 'files/template_custom_setup/template_custom_setup.ino';
                             break;
                     }
 
@@ -1038,7 +1038,7 @@ function postNewBox(req, res, next) {
 // Send box script to user via email
 function sendWelcomeMail(user, box) {
     'use strict';
-    var templatePath = './templates/registration.html';
+    var templatePath = cfg.pathToApp + 'templates/registration.html';
     var templateContent = fs.readFileSync(templatePath, 'utf8');
     var template = _.template(templateContent);
     var compiled = template({'user': user, 'box': box});

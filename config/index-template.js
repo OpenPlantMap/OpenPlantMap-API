@@ -8,6 +8,7 @@ exports.dbName = 'oplm';
 exports.dbNameTest = 'oplm_Test';
 exports.serverHost = '';
 exports.serverPort = '';
+exports.pathToApp = '';
 
 exports.email = {};
 exports.email.host = '';
