@@ -1050,7 +1050,8 @@ function sendWelcomeMail(user, box) {
         auth: {
             user: cfg.email.user,
             pass: cfg.email.pass
-        }
+        },
+        tls: cfg.email.tls
     }));
     transporter.use('compile', htmlToText());
     transporter.sendMail({

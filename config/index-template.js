@@ -19,3 +19,4 @@ exports.email.fromName = '';
 exports.email.fromEmail = '';
 exports.email.replyTo = '';
 exports.email.subject = '';
+exports.email.tls = {};
