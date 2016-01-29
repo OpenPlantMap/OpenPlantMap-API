@@ -573,7 +573,7 @@ function postNewPlantType(req, res, next){
 	
 	newPlantType.save(function(err){
 		if (err) return next(new restify.InvalidArgumentError(JSON.stringify(err.errors)));
-		var fileName = "/var/www/OpenPlantMap/app/planttypeimages/" + newPlantType._id + '.jpeg';
+		var fileName = cfg.imageFolder+"" + newPlantType._id + '.jpeg';
 		fs.writeFile(fileName, imageBuffer.data, function(error){
 			if (error) log.debug(error);
 			log.debug("PlantType-ImageFile successfully created on server.");
@@ -821,7 +821,7 @@ function postNewPlant(req,res,next){
 	newPlant.save(function(err){
 
 		if (err) return next(new restify.InvalidArgumentError(JSON.stringify(err.errors)));
-		var fileName = "/var/www/OpenPlantMap/app/plantimages/" + newPlant._id + '.jpeg';
+		var fileName = cfg.imageFolder+"" + newPlant._id + '.jpeg';
 		fs.writeFile(fileName, imageBuffer.data, function(error){
 			if (error) log.debug(error);
 			log.debug("Plant-ImageFile successfully created on server.");
