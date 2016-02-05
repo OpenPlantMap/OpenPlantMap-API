@@ -283,6 +283,8 @@ server.get({path: PATH_plantTypes + '/:planttypeId', version: '0.0.1'}, findPlan
 server.get({path: PATH_plantTypes + 'by/:latinname', version: '0.0.1'}, getPlantTypeByLatinName);
 server.get({path: PATH_plantTypes + 'bycommon/:name', version: '0.0.1'}, getPlantTypeByCommonName);
 server.get({path: PATH_plants +'byType/:planttypeId', version: '0.0.1'}, getAllPlantsByTypeId);
+server.get({path: '/planttypesIDs', version: '0.0.1'},getAllPlanttypes);
+
 
 server.post({path : PATH , version: '0.0.1'} ,postNewBox);
 server.post({path : PATH +'/:boxId/:sensorId' , version : '0.0.1'}, postNewMeasurement);
@@ -474,6 +476,15 @@ function getAllPlantsByTypeId(req, res, next){
 	});
 }
 
+
+function getAllPlanttypes(req, res, next){
+    Planttype.find({},{"_ID":1, "latinName":1}).populate('').exec(function(error,planttypes){
+        if (error) {
+        	res.send(400, error);
+		}
+        res.send(200, planttypes);
+    });
+}
 /**
  * @api {get} /boxes/:boxId/data/:sensorId?from-date=:fromDate&to-date:toDate Get last n measurements for a sensor
  * @apiDescription Get up to 1000 measurements from a sensor for a specific time frame, parameters `from-date` and 
