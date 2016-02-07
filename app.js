@@ -224,12 +224,14 @@ var planttypeSchema = new Schema({
     max: Number
   },
   moistureCondition: {
-    min: Number,
-    max: Number
+    dry: Boolean,
+	medium: Boolean,
+	wet: Boolean
   },
   sunLightCondition: {
-    min: Number,
-    max: Number
+    sunny: Boolean,
+	semishady: Boolean,
+	shady: Boolean
   },
   temperatureCondition: {
     min: Number,
@@ -285,11 +287,10 @@ server.get({path: PATH_plantTypes + 'bycommon/:name', version: '0.0.1'}, getPlan
 server.get({path: PATH_plants +'byType/:planttypeId', version: '0.0.1'}, getAllPlantsByTypeId);
 server.get({path: '/planttypesIDs', version: '0.0.1'},getAllPlanttypes);
 
-
 server.post({path : PATH , version: '0.0.1'} ,postNewBox);
 server.post({path : PATH +'/:boxId/:sensorId' , version : '0.0.1'}, postNewMeasurement);
 server.post({path: PATH_plants +'/:planttypeId', version : '0.0.1'}, postNewPlant);
-server.post({path: PATH_plantTypes +'/:latinName/:commonNames/:pH_min/:pH_max/:mois_min/:mois_max/:temp_min/:temp_max/:sun_min/:sun_max', version : '0.0.1'}, postNewPlantType);
+server.post({path: PATH_plantTypes +'/:latinName/:commonNames/:pH_min/:pH_max/:mois_dry/:mois_med/:mois_wet/:temp_min/:temp_max/:sun_sunny/:sun_semi/:sun_shady', version : '0.0.1'}, postNewPlantType);
 
 server.get({path: userPATH + '/:boxId', version: '0.0.1'}, validApiKey);
 
@@ -571,7 +572,7 @@ function getData(req, res, next) {
 }
 
 /**
-* @api {post} planttypes/:latinName/:commonNames/:pH_min/:pH_max/:mois_min/:mois_max/:temp_min/:temp_max/:sun_min/:sun_max
+* @api {post} planttypes/:latinName/:commonNames/:pH_min/:pH_max/:mois_dry/:mois_med/:mois_wet/:temp_min/:temp_max/:sun_sunny/:sun_semi/:sun_shady
 * @apiDescription inserts a new plantType into the database.
 * @apiVersion 0.0.1
 * @apiGroup Planttypes
@@ -579,8 +580,8 @@ function getData(req, res, next) {
 * @apiParam {name} Array of common names for the plant type
 * @apiParam {latinName} String of the specific latin name for the plant type
 * @apiParam {pHCondition} pH Condition Min and Max value for the plant type
-* @apiParam {moistureCondition} moisture Condition Min and Max value for the plant type
-* @apiParam {sunlightCondition} sunlight Condition Min and Max value for the plant type
+* @apiParam {moistureCondition} moisture Condition wet, medium, dry value for the plant type
+* @apiParam {sunlightCondition} sunlight Condition sunny, semi-shady, shady value for the plant type
 * @apiParam {temperatureCondition} temperature Condition Min and Max value for the plant type
 */
 function postNewPlantType(req, res, next){
@@ -593,12 +594,14 @@ function postNewPlantType(req, res, next){
 			max: req.params.pH_max
 		}, 
 		moistureCondition: {
-			min: req.params.mois_min,
-			max: req.params.mois_max
+			dry: req.params.mois_dry,
+			medium: req.params.mois_med,
+			wet: req.params.mois_wet,
 		},
 		sunLightCondition: {
-			min: req.params.sun_min,
-			max: req.params.sun_max
+			sunny: req.params.sun_sunny,
+			semishady: req.params.sun_semi,
+			shady: req.params.sun_shady,
 		},
 		temperatureCondition: {
 			min: req.params.temp_min,
@@ -1114,6 +1117,8 @@ server.on('uncaughtException', function (req, res, route, err) {
     return res.send(500, JSON.stringify('An error occured'));
 });
 
+
+
 /**
  * @api {get} /boxes/:boxId/conditions/:measurement/:bounds?months=:months&hours=:hours Get percentages for each interval 
  * @apiDescription Get the percentages and hours for a measurement of one box for each interval.
@@ -1159,7 +1164,7 @@ server.on('uncaughtException', function (req, res, route, err) {
       "percentage": "20",
       "hours": "2:10",
     }
-  ],
+  ]
 }
  */
 function getConditions (req,res,next) {
