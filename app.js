@@ -590,8 +590,8 @@ function postNewPlantType(req, res, next){
 		name :[],
 		latinName: req.params.latinName,
 		phCondition: {
-			min: req.params.pH_min,
-			max: req.params.pH_max
+			min: 0.0,
+			max: 14.0
 		}, 
 		moistureCondition: {
 			dry: req.params.mois_dry,
@@ -614,6 +614,9 @@ function postNewPlantType(req, res, next){
 	req.params.commonNames.split('ZZZ').forEach(function (line) {
 		newPlantTypeData.name.push(line);
 	});
+	
+	newPlantTypeData.phCondition.min = req.params.pH_min.replace("_",".");
+	newPlantTypeData.phCondition.max = req.params.pH_max.replace("_",".");
 	newPlantType = new Planttype(newPlantTypeData);
 	
 	newPlantType.save(function(err){
