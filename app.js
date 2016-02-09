@@ -1214,12 +1214,12 @@ function countValuesInInterval(sensorId, bounds, index, data, res) {
         end = Number(bounds[index]);
     } else {
         if (typeof bounds[index - 1] !== "undefined" && typeof bounds[index] === "undefined") {
-            interval = {$gt: Number(bounds[index - 1])};
+            interval = {$gte: Number(bounds[index - 1])};
             start = Number(bounds[index - 1]);
             end = "";
         }
         if (typeof bounds[index - 1] !== "undefined" && typeof bounds[index] !== "undefined") {
-            interval = {$gt: Number(bounds[index - 1]), $lt: Number(bounds[index])};
+            interval = {$gte: Number(bounds[index - 1]), $lt: Number(bounds[index])};
             start = Number(bounds[index - 1]);
             end = Number(bounds[index]);
         }
@@ -1236,7 +1236,7 @@ function countValuesInInterval(sensorId, bounds, index, data, res) {
                 }
                 data[index] = interval;
                 if (data[index].length !== 0 && data.count !== 0) {
-                    data[index][0].percentage = (data[index][0].count / data.count)*100;
+                    data[index][0].percentage = ((Math.round((data[index][0].count / data.count)*1000))/10).toFixed(1);
                 }else{
                     data[index][0]={};
                     data[index][0].percentage=0;
