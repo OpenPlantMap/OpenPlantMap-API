@@ -22,3 +22,6 @@ config/index.js
 usersketches
 userimages
 mongo-data
+
+*.*~
+doc
