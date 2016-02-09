@@ -624,7 +624,7 @@ function postNewPlantType(req, res, next){
 			if (error) log.debug(error);
 			log.debug("PlantType-ImageFile successfully created on server.");
 		});
-		res.send(201, newPlantType);
+		res.send(201, newPlantType._id);
 		log.debug("PlantType successfully saved in database.");
 	});
 }
