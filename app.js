@@ -1237,6 +1237,9 @@ function countValuesInInterval(sensorId, bounds, index, data, res) {
                 data[index] = interval;
                 if (data[index].length !== 0 && data.count !== 0) {
                     data[index][0].percentage = (data[index][0].count / data.count)*100;
+                }else{
+                    data[index][0]={};
+                    data[index][0].percentage=0;
                 }
                 if (index !== (bounds.length)) {
                     index = index + 1;
