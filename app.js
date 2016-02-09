@@ -224,14 +224,14 @@ var planttypeSchema = new Schema({
     max: Number
   },
   moistureCondition: {
-    dry: Boolean,
-	medium: Boolean,
-	wet: Boolean
+    dry: String,
+	medium: String,
+	wet: String
   },
   sunLightCondition: {
-    sunny: Boolean,
-	semishady: Boolean,
-	shady: Boolean
+    sunny: String,
+	semishady: String,
+	shady: String
   },
   temperatureCondition: {
     min: Number,
@@ -590,8 +590,8 @@ function postNewPlantType(req, res, next){
 		name :[],
 		latinName: req.params.latinName,
 		phCondition: {
-			min: 0.0,
-			max: 14.0
+			min: req.params.pH_min,
+			max: req.params.pH_max
 		}, 
 		moistureCondition: {
 			dry: req.params.mois_dry,
@@ -615,8 +615,6 @@ function postNewPlantType(req, res, next){
 		newPlantTypeData.name.push(line);
 	});
 	
-	newPlantTypeData.phCondition.min = req.params.pH_min.replace("_",".");
-	newPlantTypeData.phCondition.max = req.params.pH_max.replace("_",".");
 	newPlantType = new Planttype(newPlantTypeData);
 	
 	newPlantType.save(function(err){
@@ -875,6 +873,7 @@ function postNewPlant(req,res,next){
 
 		if (err) return next(new restify.InvalidArgumentError(JSON.stringify(err.errors)));
 		var fileName = cfg.imageFolder+ "" + newPlant._id + '.jpeg';
+		//newPlant.image = newPlant._id + '.jpeg';
 		fs.writeFile(fileName, imageBuffer.data, function(error){
 			if (error) log.debug(error);
 			log.debug("Plant-ImageFile successfully created on server.");
