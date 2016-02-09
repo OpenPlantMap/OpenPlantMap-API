@@ -294,7 +294,7 @@ server.post({path: PATH_plantTypes +'/:latinName/:commonNames/:pH_min/:pH_max/:m
 
 server.get({path: userPATH + '/:boxId', version: '0.0.1'}, validApiKey);
 
-server.get({path: '/boxes/:boxId/conditions/:measurement/:bounds', version: '0.0.1'}, getConditions);
+server.get({path: '/boxes/:boxId/conditions/:measurement', version: '0.0.1'}, getConditions);
 
 function unknownMethodHandler(req, res) {
     'use strict';
@@ -1120,11 +1120,11 @@ server.on('uncaughtException', function (req, res, route, err) {
 
 
 /**
- * @api {get} /boxes/:boxId/conditions/:measurement/:bounds?months=:months&hours=:hours Get percentages for each interval 
+ * @api {get} /boxes/:boxId/conditions/:measurement?bound=:bound&months=:months&hours=:hours Get percentages for each interval 
  * @apiDescription Get the percentages and hours for a measurement of one box for each interval.
  * @apiParam {ID} boxId SenseBox unique ID.
- * @apiParam {String} measurement Name of the measurement. One of: light, moisture, ph-value, soil-temperature
- * @apiParam {Array} bounds Array of values which divide the measurement values into different classes. Example: [0,100,200,400]
+ * @apiParam {String} measurement Name of the measurement. One of: light, moisture, ph-value, temperature
+ * @apiParam {Number} bound value which divide the measurement values into different classes. Example: [0,100,200,400]
  * @apiParam {String} months Interval of months. (Jan=1,Feb=2,...) Example: 2-5, or 10-2
  * @apiParam {String} hours Two numbers between [0-23] examples: 8-16 or 16-8
  * @apiError {String} boxId boxId does not exist in the database.
@@ -1167,6 +1167,92 @@ server.on('uncaughtException', function (req, res, route, err) {
   ]
 }
  */
-function getConditions (req,res,next) {
+function getConditions(req, res, next) {
     'use strict';
+    var bounds = req.params.bound.sort(function (a, b) {
+        return a - b
+    });
+    var measurement = req.params.measurement;
+    var data = {};
+    var index = 0;
+
+    Box.findOne({_id: req.params.boxId}, function (err, box) {
+        if (err) {
+            return next(new restify.InvalidArgumentError(JSON.stringify(err.errors)));
+        }
+        var i;
+        for (i = 0; i < box.sensors.length; i++) {
+            if (box.sensors[i].title === measurement) {
+                var sensorId = box.sensors[i]._id;
+                Measurement.aggregate(
+                        {$match: {sensor_id: sensorId}},
+                        {$group: {_id: '$sensor_id',
+                                count: {$sum: 1}}},
+                        function (err, info) {
+                            data.sensor_id = sensorId;
+                            data.measurement = measurement;
+                            data.count = info[0].count;
+                            countValuesInInterval(sensorId, bounds, index, data, res);
+                        });
+                break;
+            }
+        }
+        if (i === (box.sensors.length)) {
+            return res.send("no such measurement found");
+        }
+    });
 }
+function countValuesInInterval(sensorId, bounds, index, data, res) {
+    var interval;
+    var start;
+    var end;
+    if (typeof bounds[index - 1] === "undefined" && typeof bounds[index] !== "undefined") {
+        interval = {$lt: Number(bounds[index])};
+        start = "";
+        end = Number(bounds[index]);
+    } else {
+        if (typeof bounds[index - 1] !== "undefined" && typeof bounds[index] === "undefined") {
+            interval = {$gt: Number(bounds[index - 1])};
+            start = Number(bounds[index - 1]);
+            end = "";
+        }
+        if (typeof bounds[index - 1] !== "undefined" && typeof bounds[index] !== "undefined") {
+            interval = {$gt: Number(bounds[index - 1]), $lt: Number(bounds[index])};
+            start = Number(bounds[index - 1]);
+            end = Number(bounds[index]);
+        }
+    }
+    return Measurement.aggregate(
+            {$match: {sensor_id: sensorId, value: interval}},
+            {$group: {_id: '$sensor_id',
+                    values: {$push: '$value'},
+                    count: {$sum: 1}}},
+            {$project: {_id: 0, values: 1, count: 1, interval_start: {$literal: start}, interval_end: {$literal: end}}},
+            function (err, interval) {
+                if(err){
+                    res.send(err);
+                }
+                data[index] = interval;
+                if (data[index].length !== 0 && data.count !== 0) {
+                    data[index][0].percentage = (data[index][0].count / data.count)*100;
+                }
+                if (index !== (bounds.length)) {
+                    index = index + 1;
+                    return  countValuesInInterval(sensorId, bounds, index, data, res);
+                } else {
+
+                    res.send(data);
+                }
+
+            });
+}
+
+//                var m = new Measurement({"sensor_id": "56b0ec3174cc57d12ce407fc", "value": 200});
+//                m.save(function (err) {
+//                    if (err) {
+//                        console.log(err);
+//                    }
+//                    return res.send("inserted!!! ");
+//                });
+
+
